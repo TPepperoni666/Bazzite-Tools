@@ -30,7 +30,7 @@ Open a Terminal (Konsole or Ptyxis).
 
 Clone the repository:
 
-git clone https://github.com/TPepperoni666/Bazzite-Tools.git
+git clone [https://github.com/TPepperoni666/Bazzite-Tools.git](https://github.com/TPepperoni666/Bazzite-Tools.git)
 cd Bazzite-Tools
 
 
