@@ -1,5 +1,5 @@
 #!/bin/bash
-# === SteamOS Backup Manager (v1.1 - Gum Edition) ===
+# === SteamOS Backup Manager (v1.2 - Gum Edition) ===
 
 # --- Global Paths ---
 SCRIPTS_DIR="$HOME/scripts"
@@ -1024,6 +1024,51 @@ function menu_settings() {
     done
 }
 
+function check_for_update() {
+    local remote_url="https://raw.githubusercontent.com/TPepperoni666/Bazzite-Tools/main/Scripts/SteamOS-Prefix-Manager/steamos_manager.sh"
+    ui_header "⬆️  CHECK FOR UPDATE"
+    gum style --foreground 250 "  🌐 Checking for updates..."
+
+    local tmp_file
+    tmp_file=$(mktemp /tmp/steamos_manager_update.XXXXXX)
+
+    if ! curl -fsSL "$remote_url" -o "$tmp_file" 2>/dev/null; then
+        gum style --foreground 212 "⚠️  Could not reach GitHub. Check your internet connection."
+        rm -f "$tmp_file"
+        sleep 3
+        return
+    fi
+
+    local local_ver remote_ver
+    local_ver=$(grep -m1 '^# === SteamOS Backup Manager' "$MANAGER_SCRIPT_PATH" | grep -oP 'v[\d.]+')
+    remote_ver=$(grep -m1 '^# === SteamOS Backup Manager' "$tmp_file" | grep -oP 'v[\d.]+')
+
+    if [ "$local_ver" = "$remote_ver" ] && [ -n "$local_ver" ]; then
+        gum style --foreground 46 "✅ Already up to date ($local_ver)."
+        rm -f "$tmp_file"
+        sleep 2
+        return
+    fi
+
+    local label="${local_ver:-unknown} → ${remote_ver:-unknown}"
+    if [ -z "$remote_ver" ]; then
+        label="(version unknown — update anyway?)"
+    fi
+
+    if ui_confirm "Update available: $label. Install now?"; then
+        cp "$tmp_file" "$MANAGER_SCRIPT_PATH"
+        chmod +x "$MANAGER_SCRIPT_PATH"
+        rm -f "$tmp_file"
+        gum style --foreground 46 "✅ Updated! Restarting..."
+        sleep 2
+        exec bash "$MANAGER_SCRIPT_PATH"
+    else
+        gum style --foreground 250 "  Update skipped."
+        rm -f "$tmp_file"
+        sleep 1
+    fi
+}
+
 ################################################################################
 # SECTION 8: MAIN EXECUTION
 ################################################################################
@@ -1075,12 +1120,14 @@ while true; do
         "💾 Backup" \
         "🔄 Restore" \
         "⚙️  Settings" \
+        "⬆️  Check for Update" \
         "❌ Exit")
 
     case "$OPT" in
-        "💾 Backup")    menu_backup ;;
-        "🔄 Restore")   menu_restore ;;
-        "⚙️  Settings") menu_settings ;;
-        "❌ Exit"|"")   clear; exit 0 ;;
+        "💾 Backup")             menu_backup ;;
+        "🔄 Restore")            menu_restore ;;
+        "⚙️  Settings")          menu_settings ;;
+        "⬆️  Check for Update")  check_for_update ;;
+        "❌ Exit"|"")            clear; exit 0 ;;
     esac
 done
